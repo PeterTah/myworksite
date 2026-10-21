@@ -72,7 +72,7 @@ export default function BackupButton() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        className="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
       >
         Backup
       </button>

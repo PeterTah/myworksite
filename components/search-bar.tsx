@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { NoteMetadata } from '@/lib/notes';
+import { noteViewHref } from '@/lib/category-url';
 
 export default function SearchBar() {
   const router = useRouter();
@@ -63,25 +64,27 @@ export default function SearchBar() {
     );
   };
 
-  const handleNoteClick = (slug: string) => {
-    router.push(`/kb/${slug}`);
+  // Open the note expanded in its category / sub-category view
+  const handleNoteClick = (note: NoteMetadata) => {
+    router.push(noteViewHref(note));
     setIsOpen(false);
     setQuery('');
     setResults([]);
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${isOpen ? 'z-50' : ''}`}>
       <input
         type="text"
-        placeholder="Search articles..."
+        placeholder="Search notes..."
+        aria-label="Search notes"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
           setIsOpen(true);
         }}
         onFocus={() => setIsOpen(true)}
-        className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="relative z-50 w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
       {isOpen && (query || selectedCategory !== 'all' || selectedTags.length > 0) && (
@@ -114,7 +117,7 @@ export default function SearchBar() {
                     className={`px-3 py-1 rounded-full text-sm ${
                       selectedTags.includes(tag)
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {tag}
@@ -135,13 +138,15 @@ export default function SearchBar() {
                   <button
                     key={note.slug}
                     type="button"
-                    onClick={() => handleNoteClick(note.slug)}
+                    onClick={() => handleNoteClick(note)}
                     className="w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                   >
                     <div className="font-medium">{note.title}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{note.description}</div>
                     <div className="flex gap-2 mt-1">
-                      <span className="text-xs text-gray-400">{note.category}</span>
+                      <span className="text-xs text-gray-400">
+                        {note.category}{note.subcategory && ` / ${note.subcategory}`}
+                      </span>
                       {note.tags.map(tag => (
                         <span key={tag} className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
                           {tag}

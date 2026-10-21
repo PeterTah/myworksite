@@ -15,7 +15,7 @@ export async function createBackup(): Promise<Buffer> {
 
   // Add all markdown files
   if (fs.existsSync(NOTES_DIR)) {
-    const files = fs.readdirSync(NOTES_DIR).filter(file => file.endsWith('.md'));
+    const files = fs.readdirSync(NOTES_DIR).filter(file => file.endsWith('.md') || file === '_categories.json');
     files.forEach(file => {
       const filePath = path.join(NOTES_DIR, file);
       zip.addLocalFile(filePath);
@@ -56,10 +56,19 @@ export async function restoreBackup(zipBuffer: Buffer): Promise<{ success: boole
     }
 
     for (const entry of entries) {
-      if (entry.entryName.endsWith('.md') && !entry.isDirectory) {
+      const fileName = path.basename(entry.entryName);
+      if (fileName === '_categories.json' && !entry.isDirectory) {
+        // Restore sidebar categories, but only if the file is valid JSON
         try {
           const content = entry.getData().toString('utf8');
-          const fileName = path.basename(entry.entryName);
+          JSON.parse(content);
+          fs.writeFileSync(path.join(NOTES_DIR, fileName), content);
+        } catch (error) {
+          errors.push(`Failed to restore categories: ${error}`);
+        }
+      } else if (entry.entryName.endsWith('.md') && !entry.isDirectory) {
+        try {
+          const content = entry.getData().toString('utf8');
           const filePath = path.join(NOTES_DIR, fileName);
           fs.writeFileSync(filePath, content);
           imported++;

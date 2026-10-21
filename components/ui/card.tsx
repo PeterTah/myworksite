@@ -1,16 +1,21 @@
 import * as React from "react";
 
-export function Card({ children, className }: any) {
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function Card({ children, className = "" }: CardProps) {
   return (
     <div
-      className={`rounded-xl border bg-white shadow-sm ${className}`}
+      className={`rounded-xl border border-gray-200 bg-white shadow-sm ${className}`}
     >
       {children}
     </div>
   );
 }
 
-export function CardContent({ children, className }: any) {
+export function CardContent({ children, className = "" }: CardProps) {
   return (
     <div className={`p-5 ${className}`}>
       {children}

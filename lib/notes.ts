@@ -4,11 +4,20 @@ import matter from 'gray-matter';
 
 const NOTES_DIR = path.join(process.cwd(), 'notes');
 
+// Resolve a slug to its file, rejecting anything that could escape NOTES_DIR (e.g. "../")
+function notePath(slug: string): string {
+  if (!/^[\w-]+$/.test(slug)) {
+    throw new Error(`Invalid note slug: ${slug}`);
+  }
+  return path.join(NOTES_DIR, `${slug}.md`);
+}
+
 export interface Note {
   slug: string;
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   tags: string[];
   content: string;
   contentType: 'markdown' | 'html';
@@ -21,6 +30,7 @@ export interface NoteMetadata {
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   tags: string[];
   contentType: 'markdown' | 'html';
   createdAt?: string;
@@ -45,6 +55,7 @@ export async function getAllNotes(): Promise<NoteMetadata[]> {
       title: data.title || 'Untitled',
       description: data.description || '',
       category: data.category || 'Uncategorized',
+      subcategory: data.subcategory || undefined,
       tags: data.tags || [],
       contentType: data.contentType || 'markdown',
       createdAt: data.createdAt,
@@ -57,7 +68,8 @@ export async function getAllNotes(): Promise<NoteMetadata[]> {
 
 // Get a single note by slug
 export async function getNoteBySlug(slug: string): Promise<Note | null> {
-  const filePath = path.join(NOTES_DIR, `${slug}.md`);
+  if (!/^[\w-]+$/.test(slug)) return null;
+  const filePath = notePath(slug);
 
   if (!fs.existsSync(filePath)) {
     return null;
@@ -71,6 +83,7 @@ export async function getNoteBySlug(slug: string): Promise<Note | null> {
     title: data.title || 'Untitled',
     description: data.description || '',
     category: data.category || 'Uncategorized',
+    subcategory: data.subcategory || undefined,
     tags: data.tags || [],
     content,
     contentType: data.contentType || 'markdown',
@@ -85,25 +98,17 @@ export async function createNote(note: Omit<Note, 'slug'> & { slug?: string }): 
     fs.mkdirSync(NOTES_DIR, { recursive: true });
   }
 
-  const slug = note.slug || generateSlug(note.title);
-  const filePath = path.join(NOTES_DIR, `${slug}.md`);
+  const slug = note.slug || uniqueSlug(generateSlug(note.title));
+  const filePath = notePath(slug);
   const now = new Date().toISOString();
 
-  const frontmatter = matter.stringify(note.content, {
-    title: note.title,
-    description: note.description,
-    category: note.category,
-    tags: note.tags || [],
-    contentType: note.contentType || 'markdown',
-    createdAt: now,
-    updatedAt: now,
-  });
+  const frontmatter = matter.stringify(note.content, toFrontmatter(note, now, now));
 
   fs.writeFileSync(filePath, frontmatter, 'utf-8');
 
   return {
-    slug,
     ...note,
+    slug,
     createdAt: now,
     updatedAt: now,
   };
@@ -111,7 +116,7 @@ export async function createNote(note: Omit<Note, 'slug'> & { slug?: string }): 
 
 // Update an existing note
 export async function updateNote(slug: string, note: Omit<Note, 'slug'>): Promise<Note | null> {
-  const filePath = path.join(NOTES_DIR, `${slug}.md`);
+  const filePath = notePath(slug);
 
   if (!fs.existsSync(filePath)) {
     return null;
@@ -120,15 +125,7 @@ export async function updateNote(slug: string, note: Omit<Note, 'slug'>): Promis
   const existing = await getNoteBySlug(slug);
   const now = new Date().toISOString();
 
-  const frontmatter = matter.stringify(note.content, {
-    title: note.title,
-    description: note.description,
-    category: note.category,
-    tags: note.tags || [],
-    contentType: note.contentType || 'markdown',
-    createdAt: existing?.createdAt || now,
-    updatedAt: now,
-  });
+  const frontmatter = matter.stringify(note.content, toFrontmatter(note, existing?.createdAt || now, now));
 
   fs.writeFileSync(filePath, frontmatter, 'utf-8');
 
@@ -140,9 +137,26 @@ export async function updateNote(slug: string, note: Omit<Note, 'slug'>): Promis
   };
 }
 
+// Move a note to another category / sub-category without touching its content or edit date
+export async function moveNote(slug: string, category: string, subcategory?: string): Promise<boolean> {
+  const filePath = notePath(slug);
+  if (!fs.existsSync(filePath)) {
+    return false;
+  }
+
+  // Passing options bypasses gray-matter's parse cache, so mutating `data` below can't leak into it
+  const { data, content } = matter(fs.readFileSync(filePath, 'utf-8'), {});
+  data.category = category;
+  if (subcategory) data.subcategory = subcategory;
+  else delete data.subcategory;
+
+  fs.writeFileSync(filePath, matter.stringify(content, data), 'utf-8');
+  return true;
+}
+
 // Delete a note
 export async function deleteNote(slug: string): Promise<boolean> {
-  const filePath = path.join(NOTES_DIR, `${slug}.md`);
+  const filePath = notePath(slug);
 
   if (!fs.existsSync(filePath)) {
     return false;
@@ -152,6 +166,30 @@ export async function deleteNote(slug: string): Promise<boolean> {
   return true;
 }
 
+// Frontmatter written for a note; optional fields are omitted when empty (YAML can't store undefined)
+function toFrontmatter(note: Omit<Note, 'slug'>, createdAt: string, updatedAt: string) {
+  const data: Record<string, unknown> = {
+    title: note.title,
+    description: note.description,
+    category: note.category,
+  };
+  if (note.subcategory?.trim()) data.subcategory = note.subcategory.trim();
+  data.tags = note.tags || [];
+  data.contentType = note.contentType || 'markdown';
+  data.createdAt = createdAt;
+  data.updatedAt = updatedAt;
+  return data;
+}
+
+// Append -2, -3, ... so a new note never overwrites an existing one with the same title
+function uniqueSlug(base: string): string {
+  let slug = base;
+  for (let n = 2; fs.existsSync(path.join(NOTES_DIR, `${slug}.md`)); n++) {
+    slug = `${base}-${n}`;
+  }
+  return slug;
+}
+
 // Generate a URL-friendly slug from a title
 function generateSlug(title: string): string {
   return title
@@ -159,7 +197,7 @@ function generateSlug(title: string): string {
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim();
+    .replace(/^-|-$/g, '') || `note-${Date.now()}`;
 }
 
 // Get notes grouped by category

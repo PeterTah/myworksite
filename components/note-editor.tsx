@@ -16,6 +16,7 @@ export default function NoteEditor({ note, onSave, onCancel, isSubmitting = fals
   const [title, setTitle] = useState(note?.title || '');
   const [description, setDescription] = useState(note?.description || '');
   const [category, setCategory] = useState(note?.category || '');
+  const [subcategory, setSubcategory] = useState(note?.subcategory || '');
   const [tags, setTags] = useState<string[]>(note?.tags || []);
   const [tagInput, setTagInput] = useState('');
   const [contentHtml, setContentHtml] = useState('');
@@ -50,6 +51,7 @@ export default function NoteEditor({ note, onSave, onCancel, isSubmitting = fals
       title,
       description,
       category,
+      subcategory,
       tags,
       content: contentHtml,
       contentType: 'html',
@@ -77,7 +79,7 @@ export default function NoteEditor({ note, onSave, onCancel, isSubmitting = fals
       {/* Description */}
       <div>
         <label htmlFor="description" className="block text-sm font-medium mb-2">
-          Description
+          Description <span className="font-normal text-gray-500">(optional)</span>
         </label>
         <input
           id="description"
@@ -85,7 +87,6 @@ export default function NoteEditor({ note, onSave, onCancel, isSubmitting = fals
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
         />
       </div>
 
@@ -102,6 +103,22 @@ export default function NoteEditor({ note, onSave, onCancel, isSubmitting = fals
           className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., VMware, Linux, Azure"
           required
+        />
+      </div>
+
+      {/* Sub-category */}
+      <div>
+        <label htmlFor="subcategory" className="block text-sm font-medium mb-2">
+          Sub-category <span className="font-normal text-gray-500">(optional)</span>
+        </label>
+        <input
+          id="subcategory"
+          type="text"
+          value={subcategory}
+          onChange={(e) => setSubcategory(e.target.value)}
+          className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g., vSAN, NSX"
+          maxLength={60}
         />
       </div>
 
