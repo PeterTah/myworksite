@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { createNoteAction } from '@/app/actions';
+import { importNoteAction } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 
 export default function ImportButton() {
@@ -18,16 +18,7 @@ export default function ImportButton() {
 
     try {
       const content = await file.text();
-      const { data, content: markdownContent } = await import('gray-matter').then(m => m.default(content));
-
-      const result = await createNoteAction({
-        title: data.title || file.name.replace('.md', ''),
-        description: data.description || '',
-        category: data.category || 'Uncategorized',
-        tags: data.tags || [],
-        content: markdownContent,
-        contentType: 'markdown',
-      });
+      const result = await importNoteAction(file.name, content);
 
       if (result.success) {
         alert('Note imported successfully!');

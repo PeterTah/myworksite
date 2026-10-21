@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-white text-black transition-colors dark:bg-gray-900 dark:text-white">
+      <body suppressHydrationWarning className="min-h-screen bg-white text-black transition-colors dark:bg-gray-900 dark:text-white">
         <header className="border-b dark:border-gray-800">
           <main className="w-full mx-auto p-4 flex justify-between items-center">
             <h1 className="text-xl font-bold">My Knowledge Base</h1>

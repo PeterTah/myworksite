@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import matter from 'gray-matter';
 import { createNote, updateNote, deleteNote, type Note } from '@/lib/notes';
 
 export async function createNoteAction(note: Omit<Note, 'slug'> & { slug?: string }) {
@@ -13,6 +14,18 @@ export async function createNoteAction(note: Omit<Note, 'slug'> & { slug?: strin
     console.error('Error creating note:', error);
     return { success: false, error: 'Failed to create note' };
   }
+}
+
+export async function importNoteAction(fileName: string, raw: string) {
+  const { data, content } = matter(raw);
+  return createNoteAction({
+    title: data.title || fileName.replace(/\.md$/, ''),
+    description: data.description || '',
+    category: data.category || 'Uncategorized',
+    tags: data.tags || [],
+    content,
+    contentType: 'markdown',
+  });
 }
 
 export async function updateNoteAction(slug: string, note: Omit<Note, 'slug'>) {
