@@ -6,6 +6,7 @@ import ExportButton from "@/components/export-button";
 import ReadingProgress from "@/components/reading-progress";
 import NoteActions from "@/components/note-actions";
 import CodeEnhancer from "@/components/code-enhancer";
+import ImageZoom from "@/components/image-zoom";
 import { addHeadingIds } from "@/lib/headings";
 import { subcategoryHref } from "@/lib/category-url";
 
@@ -79,6 +80,7 @@ export default async function ArticlePage({
         dangerouslySetInnerHTML={{ __html: contentHtml }}
       />
       <CodeEnhancer key={`${article.slug}-${article.updatedAt}`} targetId="article-content" />
+      <ImageZoom key={`zoom-${article.slug}-${article.updatedAt}`} targetId="article-content" />
 
       {/* RELATED ARTICLES */}
       {relatedNotes.length > 0 && (

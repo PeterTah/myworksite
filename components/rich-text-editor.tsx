@@ -9,9 +9,10 @@ import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { lowlight, CODE_LANGUAGES } from '@/lib/code-languages';
 import { cleanPastedHtml } from '@/lib/clean-paste';
+import { uploadImage, imageFilesFrom } from '@/lib/upload-image';
 
 // Keep the existing Ctrl/Cmd+K shortcut for inline code
 const KeyboardShortcuts = Extension.create({
@@ -33,6 +34,38 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ content, onChange, placeholder = 'Start writing...', variant = 'full' }: RichTextEditorProps) {
   const compact = variant === 'compact';
+  const editorRef = useRef<Editor | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Uploads image files and embeds them, at `pos` when dropped or at the cursor otherwise
+  const insertImages = async (files: File[], pos?: number) => {
+    setUploadError(null);
+    setUploading(n => n + files.length);
+    for (const file of files) {
+      try {
+        const src = await uploadImage(file);
+        const alt = file.name.replace(/\.[^.]+$/, '');
+        const node = { type: 'image', attrs: { src, alt: alt === 'image' ? 'Screenshot' : alt } };
+        const ed = editorRef.current;
+        if (!ed) continue;
+        if (pos === undefined) {
+          // A just-inserted image stays selected; add after it instead of replacing it
+          const { selection } = ed.state;
+          ed.chain().focus().insertContentAt('node' in selection ? selection.to : selection, node).run();
+        } else {
+          ed.chain().focus().insertContentAt(pos, node).run();
+          pos += ed.state.doc.nodeAt(pos)?.nodeSize ?? 1;
+        }
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+      } finally {
+        setUploading(n => n - 1);
+      }
+    }
+  };
+
   const editor = useEditor({
     // Required with SSR: render the editor only after hydration
     immediatelyRender: false,
@@ -47,7 +80,16 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
         },
       }),
       Placeholder.configure({ placeholder }),
-      Image.configure({ HTMLAttributes: { class: 'max-w-full h-auto' } }),
+      Image.configure({
+        HTMLAttributes: { class: 'max-w-full h-auto' },
+        resize: {
+          enabled: true,
+          directions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+          minWidth: 80,
+          minHeight: 40,
+          alwaysPreserveAspectRatio: true,
+        },
+      }),
       CodeBlockLowlight.configure({ lowlight }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -64,16 +106,39 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
         class: `prose max-w-none focus:outline-none px-6 py-4 ${compact ? 'min-h-[180px]' : 'min-h-[400px]'}`,
       },
       handlePaste: (view, event) => {
-        // Let the editor handle plain-text pastes and anything pasted inside a code block
+        // Screenshots and copied images arrive as files. Word also adds a picture of the
+        // copied text, so files only win when the HTML has no text of its own.
+        const images = imageFilesFrom(event.clipboardData?.files);
         const html = event.clipboardData?.getData('text/html');
+        const htmlHasText = !!html && html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '';
+        if (images.length > 0 && !htmlHasText) {
+          insertImages(images);
+          return true;
+        }
+
+        // Let the editor handle plain-text pastes and anything pasted inside a code block
         if (!html || view.state.selection.$from.parent.type.name === 'codeBlock') {
           return false;
         }
         editor?.commands.insertContent(cleanPastedHtml(html));
         return true;
       },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+        const images = imageFilesFrom(event.dataTransfer?.files);
+        if (images.length === 0) return false;
+        event.preventDefault();
+        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
+        insertImages(images, pos);
+        return true;
+      },
     },
   });
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
+
+  const pickImages = () => fileInputRef.current?.click();
 
   // Update editor content when prop changes (e.g. note loaded after mount)
   useEffect(() => {
@@ -88,7 +153,24 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
 
   return (
     <div className="border dark:border-gray-700 rounded-lg">
-      {compact ? <CompactToolbar editor={editor} /> : <Toolbar editor={editor} />}
+      {compact ? <CompactToolbar editor={editor} onPickImages={pickImages} /> : <Toolbar editor={editor} onPickImages={pickImages} />}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp,image/avif"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = imageFilesFrom(e.target.files);
+          e.target.value = '';
+          if (files.length) insertImages(files);
+        }}
+      />
+      {(uploading > 0 || uploadError) && (
+        <div className={`px-4 py-1.5 text-sm border-b dark:border-gray-700 ${uploadError ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'}`}>
+          {uploading > 0 ? `Uploading ${uploading === 1 ? 'image' : `${uploading} images`}…` : uploadError}
+        </div>
+      )}
       <div className="bg-white dark:bg-gray-900 rounded-b-lg">
         <EditorContent editor={editor} />
       </div>
@@ -96,7 +178,7 @@ export default function RichTextEditor({ content, onChange, placeholder = 'Start
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, onPickImages }: { editor: Editor; onPickImages: () => void }) {
   // Re-render the toolbar on selection changes so active states stay accurate
   const state = useEditorState({
     editor,
@@ -141,9 +223,9 @@ function Toolbar({ editor }: { editor: Editor }) {
 
   const setLink = () => promptForLink(editor);
 
-  const addImage = () => {
-    const url = window.prompt('Image URL:');
-    if (url) chain().setImage({ src: url }).run();
+  const addImageFromUrl = () => {
+    const url = window.prompt('Image URL:', 'https://');
+    if (url && url.trim() !== 'https://') chain().setImage({ src: url.trim() }).run();
   };
 
   return (
@@ -211,7 +293,8 @@ function Toolbar({ editor }: { editor: Editor }) {
         <Sep />
 
         <Btn title="Link" active={state.link} onClick={setLink}><Icon d={I.link} /></Btn>
-        <Btn title="Image" onClick={addImage}><Icon d={I.image} /></Btn>
+        <Btn title="Insert image or screenshot (you can also paste or drop images)" onClick={onPickImages}><Icon d={I.image} /></Btn>
+        <Btn title="Image from URL" onClick={addImageFromUrl}><Icon d={I.imageLink} /></Btn>
         <Btn title="Insert table" onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Icon d={I.table} /></Btn>
       </div>
 
@@ -244,7 +327,7 @@ function promptForLink(editor: Editor) {
 }
 
 // Short toolbar for the "Add a New Idea" dialog
-function CompactToolbar({ editor }: { editor: Editor }) {
+function CompactToolbar({ editor, onPickImages }: { editor: Editor; onPickImages: () => void }) {
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -284,6 +367,7 @@ function CompactToolbar({ editor }: { editor: Editor }) {
       <Btn title="Quote" active={state.blockquote} onClick={() => chain().toggleBlockquote().run()}><Icon d={I.quote} /></Btn>
       <Btn title="Code" active={state.codeBlock} onClick={() => chain().toggleCodeBlock().run()}><Icon d={I.code} /></Btn>
       <Btn title="Insert link" active={state.link} onClick={() => promptForLink(editor)}><Icon d={I.link} /></Btn>
+      <Btn title="Insert image or screenshot" onClick={onPickImages}><Icon d={I.image} /></Btn>
     </div>
   );
 }
@@ -358,5 +442,6 @@ const I = {
   hr: 'M3 12h18',
   link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
   image: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM21 15l-5-5L5 21M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+  imageLink: 'M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M3 16l5-5 3 3M8.5 8.5h.01M16 21l5-5M17 16h4v4',
   table: 'M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18',
 };

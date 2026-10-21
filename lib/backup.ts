@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
 import { getAllNotes } from './notes';
+import { IMAGES_DIR, isValidImageName } from './images';
 
 const NOTES_DIR = path.join(process.cwd(), 'notes');
 const BACKUP_DIR = path.join(process.cwd(), 'backups');
@@ -19,6 +20,13 @@ export async function createBackup(): Promise<Buffer> {
     files.forEach(file => {
       const filePath = path.join(NOTES_DIR, file);
       zip.addLocalFile(filePath);
+    });
+  }
+
+  // Embedded images go under images/ in the zip
+  if (fs.existsSync(IMAGES_DIR)) {
+    fs.readdirSync(IMAGES_DIR).filter(isValidImageName).forEach(file => {
+      zip.addLocalFile(path.join(IMAGES_DIR, file), 'images');
     });
   }
 
@@ -57,7 +65,14 @@ export async function restoreBackup(zipBuffer: Buffer): Promise<{ success: boole
 
     for (const entry of entries) {
       const fileName = path.basename(entry.entryName);
-      if (fileName === '_categories.json' && !entry.isDirectory) {
+      if (path.dirname(entry.entryName) === 'images' && isValidImageName(fileName) && !entry.isDirectory) {
+        try {
+          fs.mkdirSync(IMAGES_DIR, { recursive: true });
+          fs.writeFileSync(path.join(IMAGES_DIR, fileName), entry.getData());
+        } catch (error) {
+          errors.push(`Failed to restore image ${fileName}: ${error}`);
+        }
+      } else if (fileName === '_categories.json' && !entry.isDirectory) {
         // Restore sidebar categories, but only if the file is valid JSON
         try {
           const content = entry.getData().toString('utf8');

@@ -1,5 +1,6 @@
 import NoteCard from "@/components/note-card";
 import CodeEnhancer from "@/components/code-enhancer";
+import ImageZoom from "@/components/image-zoom";
 import ScrollToNote from "@/components/scroll-to-note";
 import type { NoteCardData } from "@/lib/note-cards";
 import { getCategoryTree } from "@/lib/categories";
@@ -41,6 +42,7 @@ export default async function NoteCardList({ cards, openSlug, showCategory = tru
         ))}
       </div>
       <CodeEnhancer key={contentKey} targetId="note-cards" />
+      <ImageZoom key={`zoom-${contentKey}`} targetId="note-cards" />
       <ScrollToNote slug={openSlug} />
     </>
   );
