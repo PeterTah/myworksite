@@ -2,6 +2,7 @@ import NoteCard from "@/components/note-card";
 import CodeEnhancer from "@/components/code-enhancer";
 import ScrollToNote from "@/components/scroll-to-note";
 import type { NoteCardData } from "@/lib/note-cards";
+import { getCategoryTree } from "@/lib/categories";
 
 interface NoteCardListProps {
   cards: NoteCardData[];
@@ -12,7 +13,12 @@ interface NoteCardListProps {
   layout?: 'list' | 'grid';
 }
 
-export default function NoteCardList({ cards, openSlug, showCategory = true, layout = 'list' }: NoteCardListProps) {
+export default async function NoteCardList({ cards, openSlug, showCategory = true, layout = 'list' }: NoteCardListProps) {
+  const destinations = (await getCategoryTree()).map(c => ({
+    category: c.name,
+    subcategories: c.subcategories.map(s => s.name),
+  }));
+
   // Re-run code highlighting/copy buttons whenever the set of notes or their content changes
   const contentKey = cards.map(c => `${c.note.slug}@${c.note.updatedAt}`).join('|');
 
@@ -30,6 +36,7 @@ export default function NoteCardList({ cards, openSlug, showCategory = true, lay
             card={card}
             open={card.note.slug === openSlug}
             showCategory={showCategory}
+            destinations={destinations}
           />
         ))}
       </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import ExportButton from "@/components/export-button";
 import NoteActions from "@/components/note-actions";
 import NoteDragHandle from "@/components/note-drag-handle";
+import MoveToMenu, { type MoveDestination } from "@/components/move-to-menu";
 import { categoryHref, subcategoryHref } from "@/lib/category-url";
 import type { NoteCardData } from "@/lib/note-cards";
 
@@ -15,9 +16,11 @@ interface NoteCardProps {
   open?: boolean;
   /** Show the category / sub-category badge (off when the page already is that category) */
   showCategory?: boolean;
+  /** Categories and sub-categories offered in the "Move to…" menu */
+  destinations: MoveDestination[];
 }
 
-export default function NoteCard({ card, open = false, showCategory = true }: NoteCardProps) {
+export default function NoteCard({ card, open = false, showCategory = true, destinations }: NoteCardProps) {
   const { note, html, readingTime } = card;
   const edited = note.updatedAt ?? note.createdAt;
 
@@ -100,6 +103,14 @@ export default function NoteCard({ card, open = false, showCategory = true }: No
           )}
         </div>
         <div className="flex items-center gap-3">
+          <MoveToMenu
+            slug={note.slug}
+            title={note.title}
+            category={note.category}
+            subcategory={note.subcategory}
+            destinations={destinations}
+          />
+          <span className="text-gray-300 dark:text-gray-600" aria-hidden>|</span>
           <ExportButton note={note} />
           <span className="text-gray-300 dark:text-gray-600" aria-hidden>|</span>
           <NoteActions slug={note.slug} title={note.title} variant="text" />
