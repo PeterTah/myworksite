@@ -1,8 +1,14 @@
 ---
-title: "RHCSA Study Guide"
-description: "Comprehensive guide to passing the Red Hat Certified System Administrator exam."
-category: "Linux"
-tags: ["RHCSA", "certification", "study-guide"]
+title: RHCSA Study Guide
+description: >-
+  Comprehensive guide to passing the Red Hat Certified System Administrator
+  exam.
+category: Linux
+tags:
+  - RHCSA
+  - certification
+  - study-guide
+subcategory: RHCSA
 ---
 
 ## Exam Overview

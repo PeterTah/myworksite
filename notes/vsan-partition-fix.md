@@ -1,8 +1,12 @@
 ---
-title: "Fix vSAN Partition Issues"
-description: "Step-by-step guide to resolving vSAN cluster partition problems."
-category: "VMware"
-tags: ["vSAN", "troubleshooting", "networking"]
+title: Fix vSAN Partition Issues
+description: Step-by-step guide to resolving vSAN cluster partition problems.
+category: VMware
+tags:
+  - vSAN
+  - troubleshooting
+  - networking
+subcategory: vSAN
 ---
 
 ## Problem

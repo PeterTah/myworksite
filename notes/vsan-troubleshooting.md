@@ -1,8 +1,12 @@
 ---
-title: "vSAN Troubleshooting Guide"
-description: "Common vSAN issues and how to resolve them."
-category: "VMware"
-tags: ["vSAN", "troubleshooting", "health-check"]
+title: vSAN Troubleshooting Guide
+description: Common vSAN issues and how to resolve them.
+category: VMware
+tags:
+  - vSAN
+  - troubleshooting
+  - health-check
+subcategory: vSAN
 ---
 
 ## Overview

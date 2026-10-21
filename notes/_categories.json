@@ -1,0 +1,17 @@
+{
+  "categories": [
+    {
+      "name": "VMware",
+      "subcategories": [
+        "vCenter",
+        "vSAN"
+      ]
+    },
+    {
+      "name": "Linux",
+      "subcategories": [
+        "RHCSA"
+      ]
+    }
+  ]
+}
