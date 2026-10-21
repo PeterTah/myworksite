@@ -4,13 +4,22 @@
       "name": "VMware",
       "subcategories": [
         "vCenter",
-        "vSAN"
+        "vSAN",
+        "SDDC Manager",
+        "NSX-T"
       ]
     },
     {
       "name": "Linux",
       "subcategories": [
         "RHCSA"
+      ]
+    },
+    {
+      "name": "DELL",
+      "subcategories": [
+        "VxRail",
+        "PowerEdge"
       ]
     }
   ]
