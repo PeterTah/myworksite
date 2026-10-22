@@ -21,6 +21,12 @@
         "VxRail",
         "PowerEdge"
       ]
+    },
+    {
+      "name": "Service Request",
+      "subcategories": [
+        "October"
+      ]
     }
   ]
 }
