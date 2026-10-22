@@ -37,7 +37,7 @@ export default function AddIdeaModal({ category, subcategory, onClose }: AddIdea
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setError(isSr ? 'Give the SR a title' : 'Give the idea a title');
+      setError(isSr ? 'Give the SR a title' : 'Give the note a title');
       titleRef.current?.focus();
       return;
     }
@@ -53,7 +53,7 @@ export default function AddIdeaModal({ category, subcategory, onClose }: AddIdea
         contentType: 'html',
       });
       if (!result.success) {
-        setError(result.error || (isSr ? 'Failed to add SR' : 'Failed to add idea'));
+        setError(result.error || (isSr ? 'Failed to add SR' : 'Failed to add note'));
         return;
       }
       router.refresh();
@@ -72,7 +72,7 @@ export default function AddIdeaModal({ category, subcategory, onClose }: AddIdea
     >
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 id="add-idea-title" className="text-xl font-semibold">{isSr ? 'New SR' : 'Add a New Idea'}</h2>
+          <h2 id="add-idea-title" className="text-xl font-semibold">{isSr ? 'New SR' : 'Add Note'}</h2>
           <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {category} / {subcategory}
           </span>
@@ -84,7 +84,7 @@ export default function AddIdeaModal({ category, subcategory, onClose }: AddIdea
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={isSr ? 'e.g. SR 12345678 – vSAN disk group offline' : 'e.g. Magnesium timing vs. absorption'}
-          aria-label={isSr ? 'SR title' : 'Idea title'}
+          aria-label={isSr ? 'SR title' : 'Note title'}
           className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5
             focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -113,7 +113,7 @@ export default function AddIdeaModal({ category, subcategory, onClose }: AddIdea
             disabled={isPending}
             className="px-4 py-2 text-sm font-semibold tracking-wide rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {isPending ? 'ADDING…' : isSr ? 'ADD SR' : 'ADD IDEA'}
+            {isPending ? 'ADDING…' : isSr ? 'ADD SR' : 'ADD NOTE'}
           </button>
         </div>
       </form>

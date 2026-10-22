@@ -24,7 +24,7 @@ export default async function SubcategoryPage({
   const cat = found.category.name;
   const sub = found.subcategory.name;
   const cards = await loadNoteCards(found.subcategory.notes);
-  const noun = isServiceRequest(cat) ? "SR" : "idea";
+  const noun = isServiceRequest(cat) ? "SR" : "note";
 
   return (
     <KBShell showToc={false} activeNote={openSlug}>

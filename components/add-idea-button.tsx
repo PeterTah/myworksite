@@ -15,7 +15,7 @@ interface AddIdeaButtonProps {
 export default function AddIdeaButton({ category, subcategory, variant = 'button' }: AddIdeaButtonProps) {
   const [open, setOpen] = useState(false);
   const isSr = isServiceRequest(category);
-  const label = isSr ? `New SR in ${subcategory}` : `Add a new idea to ${subcategory}`;
+  const label = isSr ? `New SR in ${subcategory}` : `Add note to ${subcategory}`;
 
   return (
     <>
@@ -36,7 +36,7 @@ export default function AddIdeaButton({ category, subcategory, variant = 'button
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <PlusIcon />
-          {isSr ? 'New SR' : 'Add a New Idea'}
+          {isSr ? 'New SR' : 'Add Note'}
         </button>
       )}
       {/* Portal: the sidebar trigger sits in a hover-only container that hides when the pointer leaves */}

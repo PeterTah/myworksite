@@ -326,7 +326,7 @@ function promptForLink(editor: Editor) {
   else chain.setLink({ href: url.trim() }).run();
 }
 
-// Short toolbar for the "Add a New Idea" dialog
+// Short toolbar for the "Add Note" dialog
 function CompactToolbar({ editor, onPickImages }: { editor: Editor; onPickImages: () => void }) {
   const state = useEditorState({
     editor,
