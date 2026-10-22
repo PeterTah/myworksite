@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import AddIdeaModal from '@/components/add-idea-modal';
+import { isServiceRequest } from '@/lib/sr-template';
 
 interface AddIdeaButtonProps {
   category: string;
@@ -13,6 +14,8 @@ interface AddIdeaButtonProps {
 
 export default function AddIdeaButton({ category, subcategory, variant = 'button' }: AddIdeaButtonProps) {
   const [open, setOpen] = useState(false);
+  const isSr = isServiceRequest(category);
+  const label = isSr ? `New SR in ${subcategory}` : `Add a new idea to ${subcategory}`;
 
   return (
     <>
@@ -20,8 +23,8 @@ export default function AddIdeaButton({ category, subcategory, variant = 'button
         <button
           type="button"
           onClick={() => setOpen(true)}
-          title={`Add a new idea to ${subcategory}`}
-          aria-label={`Add a new idea to ${subcategory}`}
+          title={label}
+          aria-label={label}
           className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-200 dark:hover:bg-gray-700"
         >
           <PlusIcon />
@@ -33,7 +36,7 @@ export default function AddIdeaButton({ category, subcategory, variant = 'button
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <PlusIcon />
-          Add a New Idea
+          {isSr ? 'New SR' : 'Add a New Idea'}
         </button>
       )}
       {/* Portal: the sidebar trigger sits in a hover-only container that hides when the pointer leaves */}

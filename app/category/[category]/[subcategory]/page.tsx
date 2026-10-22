@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import KBShell from "@/components/kb-shell";
 import AddIdeaButton from "@/components/add-idea-button";
+import { isServiceRequest } from "@/lib/sr-template";
 import NoteCardList from "@/components/note-card-list";
 import { findSubcategory } from "@/lib/categories";
 import { categoryHref } from "@/lib/category-url";
@@ -23,6 +24,7 @@ export default async function SubcategoryPage({
   const cat = found.category.name;
   const sub = found.subcategory.name;
   const cards = await loadNoteCards(found.subcategory.notes);
+  const noun = isServiceRequest(cat) ? "SR" : "idea";
 
   return (
     <KBShell showToc={false} activeNote={openSlug}>
@@ -36,7 +38,7 @@ export default async function SubcategoryPage({
             </p>
             <h1 className="text-3xl font-bold mt-1">{sub}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {cards.length} idea{cards.length !== 1 ? "s" : ""}
+              {cards.length} {noun}{cards.length !== 1 ? "s" : ""}
             </p>
           </div>
           <AddIdeaButton category={cat} subcategory={sub} />
@@ -44,7 +46,7 @@ export default async function SubcategoryPage({
 
         {cards.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No ideas in {sub} yet.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No {noun}s in {sub} yet.</p>
             <AddIdeaButton category={cat} subcategory={sub} />
           </div>
         ) : (
